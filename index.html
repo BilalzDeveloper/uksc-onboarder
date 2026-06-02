@@ -459,9 +459,17 @@ async function analyseImage(b64, mimeType) {
 async function shopifyGql(query, variables={}) {
   const r = await fetch(`https://${cfg.shopifyDomain}/admin/api/2024-01/graphql.json`, {
     method: 'POST',
-    headers: { 'X-Shopify-Access-Token': cfg.shopifyToken, 'Content-Type': 'application/json' },
+    headers: {
+      'X-Shopify-Access-Token': cfg.shopifyToken,
+      'Content-Type': 'application/json',
+      'Accept': 'application/json'
+    },
     body: JSON.stringify({ query, variables })
   });
+  if (!r.ok) {
+    const txt = await r.text();
+    throw new Error(`Shopify HTTP ${r.status}: ${txt.slice(0,200)}`);
+  }
   return r.json();
 }
 
@@ -705,26 +713,62 @@ async function handleGo() {
   doneLog = [];
   const list = document.getElementById('progress-list');
   list.innerHTML = '';
+
+  // Add a debug log area
+  const debugEl = document.createElement('div');
+  debugEl.style.cssText = 'margin-top:24px;padding:16px;background:#0a0a0a;border:1px solid #1e1e1e;border-radius:3px;font-size:11px;color:#666;line-height:1.8;max-height:300px;overflow-y:auto';
+  debugEl.id = 'debug-log';
+  list.appendChild(debugEl);
+
+  function dbg(msg) {
+    debugEl.innerHTML += `<div>${msg}</div>`;
+    debugEl.scrollTop = debugEl.scrollHeight;
+    console.log(msg);
+  }
+
   const items = active.map(p => {
     const el = document.createElement('div');
     el.className = 'progress-item';
     el.innerHTML = `<span class="progress-icon" style="color:#555">○</span><span class="progress-title">${p.title}</span>`;
-    list.appendChild(el);
+    list.insertBefore(el, debugEl);
     return el;
   });
 
   let created=0, archived=0;
+
+  // Test Shopify connection first
+  dbg('🔌 Testing Shopify connection…');
+  try {
+    const test = await shopifyGql(`{ shop { name } }`);
+    if (test.data?.shop?.name) {
+      dbg(`✅ Shopify connected: ${test.data.shop.name}`);
+    } else if (test.errors) {
+      dbg(`❌ Shopify error: ${JSON.stringify(test.errors)}`);
+      return;
+    } else {
+      dbg(`⚠️ Unexpected Shopify response: ${JSON.stringify(test)}`);
+    }
+  } catch(e) {
+    dbg(`❌ Shopify connection failed: ${e.message}`);
+    dbg('This is likely a CORS issue — Shopify blocks direct browser API calls.');
+    return;
+  }
+
   for (let i=0; i<active.length; i++) {
+    const prod = active[i];
     const icon = items[i].querySelector('.progress-icon');
     icon.textContent='⏳'; icon.style.color='#facc15';
+    dbg(`📦 Creating: ${prod.title}`);
     try {
-      await createProduct(active[i]);
+      const id = await createProduct(prod);
+      dbg(`✅ Created product ID: ${id}`);
       created++;
       icon.textContent='✓'; icon.style.color='#4ade80';
-      for (const img of active[i].images) {
-        try { await driveMoveToOnboarded(img.id, img.name, selectedVendor.onboardedId); archived++; } catch {}
+      for (const img of prod.images) {
+        try { await driveMoveToOnboarded(img.id, img.name, selectedVendor.onboardedId); archived++; } catch(e) { dbg(`⚠️ Archive failed: ${e.message}`); }
       }
     } catch(e) {
+      dbg(`❌ Failed: ${e.message}`);
       icon.textContent='✕'; icon.style.color='#f87171';
       const errEl=document.createElement('span'); errEl.className='progress-error'; errEl.textContent=e.message;
       items[i].appendChild(errEl);
