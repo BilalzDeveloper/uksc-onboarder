@@ -107,7 +107,9 @@
       </div>
       <label style="margin-top:12px">Google OAuth Client ID</label>
       <input type="text" id="inp-client-id" placeholder="xxxx.apps.googleusercontent.com"/>
-      <p class="hint">From Google Cloud Console → Credentials → OAuth 2.0 Client IDs</p>
+      <label style="margin-top:8px">Google OAuth Client Secret</label>
+      <input type="password" id="inp-client-secret" placeholder="GOCSPX-xxx…"/>
+      <p class="hint">Both found in Google Cloud → Credentials → your OAuth Client ID</p>
 
       <!-- Show exact redirect URI to copy into Google Cloud -->
       <div id="redirect-uri-box" style="display:block;background:#0a0a0a;border:1px solid #2a2a2a;border-radius:3px;padding:10px 12px;margin-top:8px">
@@ -257,7 +259,7 @@ const FOOTWEAR_TYPES = ["Trainers","Sneakers","Shoes"];
 
 // ── STATE ─────────────────────────────────────────────────────────────────────
 let cfg = {
-  clientId: "", shopifyToken: "", shopifyDomain: "ukstylishclub.myshopify.com", claudeKey: "",
+  clientId: "", clientSecret: "", shopifyToken: "", shopifyDomain: "ukstylishclub.myshopify.com", claudeKey: "",
   accessToken: "", refreshToken: "", tokenExpiry: 0, userEmail: ""
 };
 let selectedVendor = null;
@@ -285,8 +287,10 @@ async function generateCodeChallenge(verifier) {
 
 async function startGoogleAuth() {
   const clientId = document.getElementById('inp-client-id').value.trim();
-  if (!clientId) { alert("Enter your Google OAuth Client ID first"); return; }
+  const clientSecret = document.getElementById('inp-client-secret').value.trim();
+  if (!clientId || !clientSecret) { alert("Enter both your Google OAuth Client ID and Client Secret first"); return; }
   cfg.clientId = clientId;
+  cfg.clientSecret = clientSecret;
   saveCfg();
 
   const verifier = generateCodeVerifier();
@@ -324,6 +328,7 @@ async function handleOAuthCallback(code) {
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: new URLSearchParams({
       code, client_id: cfg.clientId,
+      client_secret: cfg.clientSecret,
       redirect_uri: redirectUri,
       grant_type: 'authorization_code',
       code_verifier: verifier
@@ -358,6 +363,7 @@ async function ensureFreshToken() {
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: new URLSearchParams({
       client_id: cfg.clientId,
+      client_secret: cfg.clientSecret,
       grant_type: 'refresh_token',
       refresh_token: cfg.refreshToken
     })
@@ -741,6 +747,7 @@ const urlParams = new URLSearchParams(window.location.search);
 const oauthCode = urlParams.get('code');
 if (oauthCode) {
   document.getElementById('inp-client-id').value = cfg.clientId || '';
+  document.getElementById('inp-client-secret').value = cfg.clientSecret || '';
   document.getElementById('inp-shopify').value = cfg.shopifyToken || '';
   document.getElementById('inp-domain').value = cfg.shopifyDomain || '';
   document.getElementById('inp-claude').value = cfg.claudeKey || '';
@@ -756,6 +763,7 @@ if (oauthCode) {
 } else {
   // Pre-fill saved values
   if (cfg.clientId) document.getElementById('inp-client-id').value = cfg.clientId;
+  if (cfg.clientSecret) document.getElementById('inp-client-secret').value = cfg.clientSecret;
   if (cfg.shopifyToken) document.getElementById('inp-shopify').value = cfg.shopifyToken;
   if (cfg.shopifyDomain) document.getElementById('inp-domain').value = cfg.shopifyDomain;
   if (cfg.claudeKey) document.getElementById('inp-claude').value = cfg.claudeKey;
