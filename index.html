@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>UKSC Store Onboarder</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#0a0a0a;color:#e5e5e5;font-family:'Courier New',monospace;min-height:100vh}
+  a{color:#f5f500}
+  /* HEADER */
+  #header{background:#111;border-bottom:1px solid #222;padding:14px 24px;display:flex;align-items:center;gap:16px;position:sticky;top:0;z-index:10}
+  .logo{font-family:Impact,sans-serif;font-size:22px;letter-spacing:4px;color:#f5f500;font-weight:900}
+  #header-title{flex:1;font-size:13px;color:#999;letter-spacing:1px}
+  /* BUTTONS */
+  .btn{background:#f5f500;color:#000;border:none;border-radius:3px;padding:12px 20px;font-family:'Courier New',monospace;font-weight:700;font-size:13px;cursor:pointer;letter-spacing:1px}
+  .btn:hover{background:#ffe500}
+  .btn-sm{background:transparent;border:1px solid #333;color:#ccc;border-radius:3px;padding:6px 12px;font-size:11px;cursor:pointer;font-family:'Courier New',monospace;letter-spacing:.5px}
+  .btn-sm:hover{border-color:#555;color:#fff}
+  .btn-sm:disabled{opacity:.3;cursor:default}
+  .btn-xs{background:transparent;border:1px solid #333;color:#888;border-radius:3px;padding:3px 8px;font-size:10px;cursor:pointer;font-family:'Courier New',monospace}
+  .btn-go{background:#f5f500;color:#000;border:none;border-radius:3px;padding:12px 28px;font-family:'Courier New',monospace;font-weight:700;font-size:14px;cursor:pointer;letter-spacing:1px}
+  .btn-go:hover{background:#ffe500}
+  /* SCREENS */
+  .screen{display:none}
+  .screen.active{display:block}
+  /* SETUP */
+  #setup-card{max-width:480px;margin:60px auto;background:#111;border:1px solid #222;border-radius:4px;padding:40px 36px;display:flex;flex-direction:column;gap:10px}
+  .logo-sub{color:#888;font-size:12px;letter-spacing:2px;text-transform:uppercase;margin-top:2px}
+  .setup-hint{color:#666;font-size:12px;margin-bottom:8px}
+  label{font-size:11px;color:#888;letter-spacing:1px;text-transform:uppercase;margin-top:8px;display:block}
+  input,select{background:#0d0d0d;border:1px solid #2a2a2a;border-radius:3px;color:#e5e5e5;padding:10px 12px;font-size:13px;outline:none;width:100%;font-family:'Courier New',monospace}
+  input:focus,select:focus{border-color:#444}
+  .hint{font-size:11px;color:#555;margin:2px 0 4px}
+  /* DASHBOARD */
+  #refresh-bar{padding:12px 24px;background:#0d0d0d;border-bottom:1px solid #1a1a1a;display:flex;align-items:center;gap:12px;font-size:12px;color:#666}
+  #vendor-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:1px;background:#1a1a1a}
+  .vendor-card{background:#0d0d0d;padding:20px 16px;display:flex;flex-direction:column;gap:8px}
+  .vendor-card.has-pending{background:#111}
+  .vendor-card.has-error{background:#1a0a0a;border-left:2px solid #5a1a1a}
+  .vendor-name{font-size:18px;font-weight:700;letter-spacing:1px;color:#fff}
+  .vendor-count{font-size:11px;color:#666}
+  /* LOG */
+  #log-box{padding:24px 32px;font-size:13px;line-height:2;color:#aaa}
+  .log-line{border-left:2px solid #222;padding-left:12px;margin-bottom:4px}
+  /* REVIEW */
+  #review-bar{padding:16px 24px;background:#111;border-bottom:1px solid #1e1e1e;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  #product-list{padding:16px 24px;display:flex;flex-direction:column;gap:16px;padding-bottom:100px}
+  .product-card{background:#111;border:1px solid #1e1e1e;border-radius:4px;padding:16px 20px;display:flex;flex-direction:column;gap:12px}
+  .product-card.skipped{opacity:.35;border-color:#333}
+  .product-header{display:flex;align-items:center;gap:10px}
+  .product-num{font-size:11px;color:#555;min-width:24px}
+  .badge{font-size:10px;padding:2px 8px;border-radius:2px;letter-spacing:.5px}
+  .badge-high{background:#1a2e1a;color:#4ade80}
+  .badge-low{background:#2e1a1a;color:#f87171}
+  .thumb-row{display:flex;gap:8px;flex-wrap:wrap}
+  .thumb{width:80px;height:80px;object-fit:cover;border-radius:2px;border:1px solid #222}
+  .field-row{display:flex;gap:12px;flex-wrap:wrap}
+  .field{flex:1 1 160px;display:flex;flex-direction:column;gap:4px}
+  .field-label{font-size:10px;color:#555;letter-spacing:1px;text-transform:uppercase}
+  .field-input{background:#0a0a0a;border:1px solid #222;border-radius:2px;color:#e5e5e5;padding:7px 10px;font-size:12px;font-family:'Courier New',monospace;outline:none;width:100%}
+  .field-input.missing{border-color:#5a2020;background:#1a0a0a}
+  .field-input[readonly]{background:#111}
+  .note-line{font-size:11px;color:#666;font-style:italic}
+  /* GO BAR */
+  #go-bar{position:fixed;bottom:0;left:0;right:0;background:#111;border-top:1px solid #222;padding:16px 24px;display:flex;align-items:center;justify-content:space-between}
+  #go-summary{font-size:12px;color:#666}
+  /* PROGRESS */
+  #progress-list{padding:32px;display:flex;flex-direction:column;gap:12px}
+  .progress-item{display:flex;align-items:center;gap:14px;font-size:13px}
+  .progress-icon{font-size:16px;width:20px;text-align:center}
+  .progress-title{color:#ccc}
+  .progress-error{color:#f87171;font-size:11px;margin-left:8px}
+  /* DONE */
+  #done-box{max-width:480px;margin:80px auto;text-align:center;display:flex;flex-direction:column;align-items:center;gap:16px}
+  #done-tick{font-size:64px;color:#f5f500}
+  #done-title{font-size:24px;font-weight:700;letter-spacing:2px}
+  #done-log{color:#4ade80;font-size:13px;line-height:2}
+  .spinner{color:#f5f500;margin-top:16px;font-size:14px;animation:pulse 1s infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+  select option{background:#0d0d0d}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div id="header" style="display:none">
+  <span class="logo">UKSC</span>
+  <span id="header-title">Dashboard</span>
+  <button class="btn-sm" id="btn-refresh" onclick="checkAllPending()">↻ Refresh</button>
+  <button class="btn-sm" onclick="showScreen('setup')" style="margin-left:4px">⚙ Tokens</button>
+</div>
+
+<!-- SETUP SCREEN -->
+<div id="screen-setup" class="screen active">
+  <div id="setup-card">
+    <div class="logo">UKSC</div>
+    <div class="logo-sub">Store Onboarder</div>
+    <p class="setup-hint">Tokens are saved in your browser — enter once and they persist.</p>
+
+    <label>Google Drive OAuth Token</label>
+    <input type="password" id="inp-drive" placeholder="ya29.xxx…"/>
+    <p class="hint">Get from <a href="https://developers.google.com/oauthplayground" target="_blank">OAuth Playground</a> → scope: https://www.googleapis.com/auth/drive</p>
+
+    <label>Shopify Admin Access Token</label>
+    <input type="password" id="inp-shopify" placeholder="shpat_xxx…"/>
+
+    <label>Shopify Store Domain</label>
+    <input type="text" id="inp-domain" placeholder="yourstore.myshopify.com" value="ukstylishclub.myshopify.com"/>
+
+    <label>Anthropic API Key</label>
+    <input type="password" id="inp-claude" placeholder="sk-ant-xxx…"/>
+    <p class="hint">Used for image analysis only — stays in your browser</p>
+
+    <button class="btn" onclick="handleSetup()" style="margin-top:16px">Connect & Open Dashboard →</button>
+  </div>
+</div>
+
+<!-- DASHBOARD SCREEN -->
+<div id="screen-dashboard" class="screen">
+  <div id="refresh-bar">
+    <span id="refresh-status">Loading vendor counts…</span>
+  </div>
+  <div id="vendor-grid"></div>
+</div>
+
+<!-- SCAN SCREEN -->
+<div id="screen-scan" class="screen">
+  <div id="log-box"></div>
+</div>
+
+<!-- REVIEW SCREEN -->
+<div id="screen-review" class="screen">
+  <div id="review-bar">
+    <label style="margin:0;display:inline">Global price (apply all):</label>
+    <input type="text" id="global-price" placeholder="£" style="width:80px;margin:0 8px"/>
+    <button class="btn-sm" onclick="applyGlobalPrice()">Apply All</button>
+  </div>
+  <div id="product-list"></div>
+  <div id="go-bar">
+    <span id="go-summary"></span>
+    <button class="btn-go" onclick="handleGo()">🚀 GO — Create in Shopify</button>
+  </div>
+</div>
+
+<!-- PROGRESS SCREEN -->
+<div id="screen-progress" class="screen">
+  <div id="progress-list"></div>
+</div>
+
+<!-- DONE SCREEN -->
+<div id="screen-done" class="screen">
+  <div id="done-box">
+    <div id="done-tick">✓</div>
+    <div id="done-title">Onboarding Complete</div>
+    <div id="done-log"></div>
+    <button class="btn" onclick="showScreen('dashboard');checkAllPending()">← Back to Dashboard</button>
+  </div>
+</div>
+
+<script>
+// ── CONFIG ────────────────────────────────────────────────────────────────────
+const VENDORS = [
+  { name:"Siim", pendingId:"1IJIHJqFR-U3W9XJuKMbd_h0wV1Z7ijPR", onboardedId:"1fCTuLRpqM2hXtzdzcEPplh6DeCkAQ4Za" },
+  { name:"Sim",  pendingId:"1BF2s6jCxnfsOmDKHuQwNVrbfcS1RSfVX", onboardedId:"1bEP4C4VghoEafAsO3JWlnBPRNjWf53fl" },
+  { name:"Son",  pendingId:"19TdvPufXdJqNfoa3LQIOFPlZEjTsjV7c", onboardedId:"1z4m6J38hPRBFOpY5cLT6zyRdxezgrXBu" },
+  { name:"Ad",   pendingId:"1bFpcd6EzAs__d_7pWcl7ft7SRABQc1NI", onboardedId:"18wD54OtDVrekaX5QSqT2S5Np71PJbCAv" },
+  { name:"Ahm",  pendingId:"19wHc_BZGP5wmo3Vy1gRG0Bb2tFTNLT_J", onboardedId:"1_NFxuEKJYyKIYkJNUfjHiMEZquFMnVx3" },
+  { name:"D",    pendingId:"13x6lTDC8CdqPYPUhgDCjejP8Fxa8FnsR", onboardedId:"1ruy43D7pZUNomGWjXYxNzON1an2-6aRE" },
+  { name:"Fr",   pendingId:"1pRRO0KOll4JmoDdXoQCKP1j-aDuqWPjD", onboardedId:"1kyv_b_8FiNnhoD0mIFTJfdnzFA9gco5A" },
+  { name:"Alll", pendingId:"1svkUgsdJd_VSYtu6uNI4MYBID9-OFFBw", onboardedId:"1L52w7KQulqjfwExlXXnrGLDG0zuUMGZZ" },
+  { name:"Al",   pendingId:"1nziygPrs0jmlMU2goB-eZEBzvz_Wcf0C", onboardedId:"1_KRyhzlCq3J7EFws47zuIy4fUFbTgJ_0" },
+  { name:"Cho",  pendingId:"13YaK4bWhsFnUg4mxkLiGxrdTzXI71JDX", onboardedId:"1i7k8V8HxGFJCLP0DeXjaV-c0anYkTgZ4" },
+  { name:"Shii", pendingId:"1BAxwOerK_8ietV0y-vgMfgfz7_CQOnf2", onboardedId:"1GyLrzpbvA4n8S72wCBVvD411DTWXtoB6" },
+  { name:"Che",  pendingId:"1qPmZnFcy91MFC78EK46KopKPNe4WgjvW", onboardedId:"1vqenz6eRBZ84BLvenxI-NWT6tPmx0SPP" },
+  { name:"Mon",  pendingId:"1aOAu6lwmS8Qq9hCFsYrgpREeyJ0dv2mW", onboardedId:"1KqsJZjFTAsK7cIuQIwZPSBPzeTmcHd2V" },
+  { name:"Afi",  pendingId:"188kUj9mOYUsH3RoExyNP3s98FSoGFDBP", onboardedId:"1xi_WQfcObgdCv6ZLFKAR6pOYOs6us10d" },
+  { name:"Sh",   pendingId:"1flpfm7ujRX5JJnYd1pF6YNyItsBkMeYQ", onboardedId:"1riZIRblgMFIFwfMzKv_JCdAu70cktzLH" },
+  { name:"Zero", pendingId:"1tqsw5tHxWSd_iXjpMh_UNFjmVdmCrjN8", onboardedId:"1tzmztVpd10gScNgxbRFBc7tAy07YnH-k" },
+  { name:"Dar",  pendingId:"1-w9nRucgvXZqnsv632ExbVfJY8NERnYc", onboardedId:"1nivuUG8lgeqibWpVN3MLAHUdgM4Iv4w1" },
+  { name:"Nwdr", pendingId:"1SJMmTPERYwfOYllk84zuaRoRfclCKES3", onboardedId:"1emcW2g-g2BuHspL_BBbYvx6oT9k8AyPd" },
+  { name:"Zz",   pendingId:"1AwbU47k1FFt9q5CV6JWq7q6JFTknqKOe", onboardedId:"1cgEsAmTfU0bqd4BTSdYfK0yIqPxxCMz1" },
+  { name:"Mz",   pendingId:"1FrzC-zk_sKFqep9PVL8p_r739KFI6jiR", onboardedId:"1laUXG-_IjPFMn_oQWWTPGfMeY5tTObzL" },
+  { name:"Za",   pendingId:"1tADF2mQSpG0nSBMIft20qrqmjtu4STdw", onboardedId:"1lhy1pcky2q-lFCOuDvNEo9giw-0j998L" },
+  { name:"Rag",  pendingId:"1IyhdqhtiE3h6A73PBQKjb43hObdtR-zg", onboardedId:"12N1zoQAqdSKpdR0duY_1V6S7wCD5h8vB" },
+  { name:"Tag",  pendingId:"15RDa0IFPepcr2kBxQ0wQHSAD47Y8RJfm", onboardedId:"1Q-Vdb5jnjWkAb88JqXP2hDSydfsNT1qx" },
+  { name:"Uptk", pendingId:"1wDMUYNDs8uVdXLmYA0KCvgNyuZ0xz3Pr", onboardedId:"1xHIIIuSFPr0g48Q4Zdw7t0nP5wvUj-n_" },
+  { name:"Daup", pendingId:"1nOuuDGE8C6ma1F0mu6dWBM74YNhfdTB9", onboardedId:"18vtE11zXRa4VWeRMokOVw3zJP4MrgLvN" },
+  { name:"Ham",  pendingId:"1bnMSDwRTylQw8dsMbcXlB7jPdE-HWyhr", onboardedId:"1dlp_l6-GDE7dSAF3gG2wXQGbzt12g9SH" },
+  { name:"Oooo", pendingId:"1plOn6A0nFXP30mpmvwiBKKd6_6aRd7Mf", onboardedId:"1QB1BH24ZyQweEbM25JiTjavLY3Aq8AZd" },
+];
+
+const COLLECTION_MAP = {
+  "T-shirt":"T-Shirts For Men","Top":"T-Shirts For Men","Polo":"T-Shirts For Men",
+  "Shorts":"Boxers and Shorts","Board shorts":"Boxers and Shorts","Swim shorts":"Boxers and Shorts","Sweat shorts":"Boxers and Shorts",
+  "Tracksuit":"Tracksuits For Men","Joggers":"Tracksuits For Men","Sweatpants":"Tracksuits For Men",
+  "Hoodie":"Tracksuits For Men","Jacket":"Tracksuits For Men","Coat":"Tracksuits For Men",
+  "Trainers":"Trainers & Footwear","Sneakers":"Trainers & Footwear","Shoes":"Trainers & Footwear",
+  "Jeans":"Jeans","Trousers":"Jeans",
+  "Bag":"Unisex Bags","Backpack":"Unisex Bags",
+  "Socks":"Socks For Men","Boxers":"Boxers and Shorts","Underwear":"Boxers and Shorts",
+  "Perfume":"Perfumes For Her","Fragrance":"Perfumes For Her",
+  "Wallet":"Men Wallet & Bag"
+};
+const PRODUCT_TYPES = Object.keys(COLLECTION_MAP);
+const CLOTHING_SIZES = ["S","M","L","XL","XXL"];
+const SHOE_SIZES = ["UK 6","UK 7","UK 8","UK 9","UK 10","UK 11","UK 12"];
+const FOOTWEAR_TYPES = ["Trainers","Sneakers","Shoes"];
+
+// ── STATE ─────────────────────────────────────────────────────────────────────
+let cfg = { driveToken:"", shopifyToken:"", shopifyDomain:"ukstylishclub.myshopify.com", claudeKey:"" };
+let selectedVendor = null;
+let products = [];
+let doneLog = [];
+
+// Persist tokens in localStorage
+function loadSaved() {
+  try {
+    const s = localStorage.getItem("uksc_cfg");
+    if (s) { cfg = {...cfg, ...JSON.parse(s)}; }
+  } catch {}
+}
+function saveCfg() {
+  try { localStorage.setItem("uksc_cfg", JSON.stringify(cfg)); } catch {}
+}
+
+// ── SCREEN MANAGEMENT ─────────────────────────────────────────────────────────
+function showScreen(name) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-'+name).classList.add('active');
+  const header = document.getElementById('header');
+  if (name === 'setup') {
+    header.style.display = 'none';
+  } else {
+    header.style.display = 'flex';
+    const titles = {dashboard:'Vendor Dashboard',scan:'Scanning…',review:'Review Products',progress:'Creating Products…',done:'Done'};
+    document.getElementById('header-title').textContent = titles[name] || '';
+    document.getElementById('btn-refresh').style.display = name === 'dashboard' ? 'inline-block' : 'none';
+  }
+}
+
+// ── SETUP ─────────────────────────────────────────────────────────────────────
+function handleSetup() {
+  cfg.driveToken = document.getElementById('inp-drive').value.trim();
+  cfg.shopifyToken = document.getElementById('inp-shopify').value.trim();
+  cfg.shopifyDomain = document.getElementById('inp-domain').value.trim();
+  cfg.claudeKey = document.getElementById('inp-claude').value.trim();
+  if (!cfg.driveToken || !cfg.shopifyToken || !cfg.claudeKey) {
+    alert("Please fill in Drive token, Shopify token, and Anthropic API key.");
+    return;
+  }
+  saveCfg();
+  showScreen('dashboard');
+  checkAllPending();
+}
+
+// ── DRIVE HELPERS ─────────────────────────────────────────────────────────────
+async function driveList(folderId) {
+  const url = `https://www.googleapis.com/drive/v3/files?q='${folderId}'+in+parents+and+(mimeType+contains+'image/')+and+trashed=false&fields=files(id,name,mimeType)&pageSize=100`;
+  const r = await fetch(url, { headers:{ Authorization:`Bearer ${cfg.driveToken}` } });
+  if (r.status === 401) throw new Error("401");
+  if (!r.ok) throw new Error(`Drive error ${r.status}`);
+  const d = await r.json();
+  return d.files || [];
+}
+
+async function driveDownloadB64(fileId, mimeType) {
+  const r = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`, {
+    headers:{ Authorization:`Bearer ${cfg.driveToken}` }
+  });
+  if (!r.ok) throw new Error(`Download failed ${r.status}`);
+  const blob = await r.blob();
+  return new Promise((res,rej)=>{
+    const reader = new FileReader();
+    reader.onload = () => res(reader.result.split(',')[1]);
+    reader.onerror = rej;
+    reader.readAsDataURL(blob);
+  });
+}
+
+async function driveMoveToOnboarded(fileId, fileName, onboardedId) {
+  const today = new Date().toISOString().slice(0,10);
+  const newName = `${today}_${fileName}`;
+  await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}/copy`, {
+    method:'POST', headers:{ Authorization:`Bearer ${cfg.driveToken}`, 'Content-Type':'application/json' },
+    body: JSON.stringify({ name:newName, parents:[onboardedId] })
+  });
+  await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}`, {
+    method:'DELETE', headers:{ Authorization:`Bearer ${cfg.driveToken}` }
+  });
+}
+
+// ── CLAUDE VISION ─────────────────────────────────────────────────────────────
+async function analyseImage(b64, mimeType) {
+  const prompt = `You are a fashion product analyst. Analyse this product image and return ONLY valid JSON (no markdown) with these exact fields:
+{"productType":"one of [${PRODUCT_TYPES.map(t=>`"${t}"`).join(',')}] or Unknown","brand":"visible brand or Unknown","styleName":"model/style name or empty string","colours":["colour1"],"isFootwear":false,"confidence":"high or low","notes":"any flags"}`;
+  const r = await fetch('https://api.anthropic.com/v1/messages', {
+    method:'POST',
+    headers:{ 'Content-Type':'application/json', 'x-api-key': cfg.claudeKey, 'anthropic-version':'2023-06-01' },
+    body: JSON.stringify({
+      model:'claude-sonnet-4-20250514', max_tokens:500,
+      messages:[{ role:'user', content:[
+        { type:'image', source:{ type:'base64', media_type:mimeType, data:b64 } },
+        { type:'text', text:prompt }
+      ]}]
+    })
+  });
+  const d = await r.json();
+  const txt = d.content?.find(b=>b.type==='text')?.text || '{}';
+  try { return JSON.parse(txt.replace(/```json|```/g,'').trim()); }
+  catch { return { productType:'Unknown', brand:'Unknown', styleName:'', colours:['Black'], isFootwear:false, confidence:'low', notes:'Parse error' }; }
+}
+
+// ── SHOPIFY HELPERS ───────────────────────────────────────────────────────────
+async function shopifyGql(query, variables={}) {
+  const r = await fetch(`https://${cfg.shopifyDomain}/admin/api/2024-01/graphql.json`, {
+    method:'POST',
+    headers:{ 'X-Shopify-Access-Token':cfg.shopifyToken, 'Content-Type':'application/json' },
+    body: JSON.stringify({ query, variables })
+  });
+  return r.json();
+}
+
+let _collectionCache = null;
+async function getCollectionId(title) {
+  if (!_collectionCache) {
+    const d = await shopifyGql(`{ collections(first:100){ edges{ node{ id title } } } }`);
+    _collectionCache = d.data?.collections?.edges || [];
+  }
+  const match = _collectionCache.find(e => e.node.title.toLowerCase().includes(title.toLowerCase()));
+  return match?.node?.id || null;
+}
+
+async function stagedUpload(filename, mimeType, b64) {
+  const d = await shopifyGql(`
+    mutation stagedUploadsCreate($input:[StagedUploadInput!]!) {
+      stagedUploadsCreate(input:$input) { stagedTargets { url resourceUrl parameters { name value } } }
+    }`, { input:[{ filename, mimeType, resource:'IMAGE', httpMethod:'POST' }] });
+  const target = d.data?.stagedUploadsCreate?.stagedTargets?.[0];
+  if (!target) return null;
+  const blob = await (await fetch(`data:${mimeType};base64,${b64}`)).blob();
+  const form = new FormData();
+  for (const p of target.parameters) form.append(p.name, p.value);
+  form.append('file', blob, filename);
+  await fetch(target.url, { method:'POST', body:form });
+  return target.resourceUrl;
+}
+
+async function createProduct(prod) {
+  const colours = prod.colours.split(',').map(c=>c.trim()).filter(Boolean);
+  const sizes = prod.sizes.split(',').map(s=>s.trim()).filter(Boolean);
+  const variants = [];
+  for (const colour of colours)
+    for (const size of sizes)
+      variants.push({ price:prod.price, options:[size,colour], inventoryPolicy:'CONTINUE' });
+
+  const mediaUrls = [];
+  for (const img of prod.images) {
+    try {
+      const url = await stagedUpload(img.name, img.mimeType, img.b64);
+      if (url) mediaUrls.push(url);
+    } catch {}
+  }
+
+  const d = await shopifyGql(`
+    mutation productCreate($input:ProductInput!,$media:[CreateMediaInput!]) {
+      productCreate(input:$input,media:$media) {
+        product { id title }
+        userErrors { field message }
+      }
+    }`, {
+    input:{
+      title:prod.title, vendor:selectedVendor.name, productType:prod.productType,
+      status:'ACTIVE', tags:[selectedVendor.name, prod.productType],
+      variants, options:['Size','Colour']
+    },
+    media: mediaUrls.map(url=>({ originalSource:url, mediaContentType:'IMAGE' }))
+  });
+
+  const errors = d.data?.productCreate?.userErrors;
+  if (errors?.length) throw new Error(errors.map(e=>e.message).join(', '));
+  const productId = d.data?.productCreate?.product?.id;
+
+  if (productId && prod.collection && !prod.collection.includes('⚠️')) {
+    const colId = await getCollectionId(prod.collection);
+    if (colId) {
+      await shopifyGql(`
+        mutation collectionAddProducts($id:ID!,$productIds:[ID!]!) {
+          collectionAddProducts(id:$id,productIds:$productIds) { userErrors { message } }
+        }`, { id:colId, productIds:[productId] });
+    }
+  }
+  return productId;
+}
+
+// ── DASHBOARD ─────────────────────────────────────────────────────────────────
+async function checkAllPending() {
+  _collectionCache = null;
+  const statusEl = document.getElementById('refresh-status');
+  const refreshBtn = document.getElementById('btn-refresh');
+  statusEl.textContent = 'Scanning all vendor folders…';
+  refreshBtn.disabled = true;
+
+  const results = await Promise.allSettled(VENDORS.map(v => driveList(v.pendingId)));
+  let authFail = false;
+  const grid = document.getElementById('vendor-grid');
+  grid.innerHTML = '';
+
+  results.forEach((r, i) => {
+    const v = VENDORS[i];
+    let count = 0, err = false;
+    if (r.status === 'fulfilled') { count = r.value.length; }
+    else { err = true; if (r.reason?.message?.includes('401')) authFail = true; }
+
+    const card = document.createElement('div');
+    card.className = 'vendor-card' + (count>0?' has-pending':'') + (err?' has-error':'');
+    card.innerHTML = `
+      <div class="vendor-name">${v.name}</div>
+      <div class="vendor-count">${err ? '⚠️ error' : count+' pending'}</div>
+      <button class="btn-sm" ${count===0?'disabled':''} onclick="startScan(${i})">${count>0?'Onboard →':'Empty'}</button>`;
+    grid.appendChild(card);
+  });
+
+  const total = results.reduce((a,r)=>a+(r.status==='fulfilled'?r.value.length:0),0);
+  statusEl.textContent = `${total} images pending across ${VENDORS.length} vendors`;
+  refreshBtn.disabled = false;
+
+  if (authFail) alert('⚠️ Drive token expired. Click ⚙ Tokens to refresh it.');
+}
+
+// ── SCAN ──────────────────────────────────────────────────────────────────────
+function log(msg) {
+  const box = document.getElementById('log-box');
+  const line = document.createElement('div');
+  line.className = 'log-line';
+  line.textContent = msg;
+  box.appendChild(line);
+  box.scrollTop = box.scrollHeight;
+}
+
+async function startScan(vendorIdx) {
+  selectedVendor = VENDORS[vendorIdx];
+  products = [];
+  document.getElementById('log-box').innerHTML = '';
+  showScreen('scan');
+  document.getElementById('header-title').textContent = `Scanning ${selectedVendor.name}…`;
+
+  try {
+    log(`📁 Scanning ${selectedVendor.name} Pending folder…`);
+    const files = await driveList(selectedVendor.pendingId);
+    if (!files.length) { log('⚠️ No images found.'); return; }
+    log(`✅ Found ${files.length} image(s). Downloading & analysing…`);
+
+    const analysed = [];
+    for (let i=0; i<files.length; i++) {
+      const f = files[i];
+      log(`🔍 (${i+1}/${files.length}) Analysing: ${f.name}`);
+      const b64 = await driveDownloadB64(f.id, f.mimeType);
+      const info = await analyseImage(b64, f.mimeType);
+      analysed.push({...f, b64, info});
+    }
+
+    // Group by brand+type+style
+    const groups = {};
+    for (const img of analysed) {
+      const key = `${img.info.brand}__${img.info.productType}__${img.info.styleName}`;
+      if (!groups[key]) groups[key] = [];
+      groups[key].push(img);
+    }
+
+    products = Object.entries(groups).map(([,imgs], idx) => {
+      const s = imgs[0].info;
+      const pType = s.productType;
+      const collection = COLLECTION_MAP[pType] || '⚠️ Unknown';
+      const isFootwear = s.isFootwear || FOOTWEAR_TYPES.includes(pType);
+      const title = [selectedVendor.name, s.brand!=='Unknown'?s.brand:'', pType, s.styleName].filter(Boolean).join(' ');
+      return { id:idx+1, title, productType:pType, collection,
+        colours: s.colours?.join(', ') || 'Black',
+        sizes: isFootwear ? SHOE_SIZES.join(', ') : CLOTHING_SIZES.join(', '),
+        price:'', images:imgs, skip:false, confidence:s.confidence, notes:s.notes, isFootwear };
+    });
+
+    log(`✅ Identified ${products.length} distinct product(s). Building review…`);
+    renderReview();
+    showScreen('review');
+    document.getElementById('header-title').textContent = `Review — ${selectedVendor.name}`;
+  } catch(e) {
+    log(`❌ Error: ${e.message}`);
+  }
+}
+
+// ── REVIEW ────────────────────────────────────────────────────────────────────
+function renderReview() {
+  const list = document.getElementById('product-list');
+  list.innerHTML = '';
+  products.forEach((prod, idx) => {
+    const card = document.createElement('div');
+    card.className = 'product-card' + (prod.skip?' skipped':'');
+    card.id = `card-${idx}`;
+
+    const typeOptions = [...PRODUCT_TYPES,'Unknown'].map(t =>
+      `<option value="${t}" ${t===prod.productType?'selected':''}>${t}</option>`).join('');
+
+    card.innerHTML = `
+      <div class="product-header">
+        <span class="product-num">#${prod.id}</span>
+        <span class="badge ${prod.confidence==='low'?'badge-low':'badge-high'}">${prod.confidence==='low'?'⚠️ Low confidence':'✓ Good'}</span>
+        <button class="btn-xs" onclick="toggleSkip(${idx})">${prod.skip?'↩ Restore':'✕ Skip'}</button>
+      </div>
+      <div class="thumb-row">
+        ${prod.images.map(img=>`<img class="thumb" src="data:${img.mimeType};base64,${img.b64}" alt="${img.name}"/>`).join('')}
+      </div>
+      <div class="field-row">
+        <div class="field"><label class="field-label">Title</label>
+          <input class="field-input" value="${prod.title}" onchange="products[${idx}].title=this.value"/></div>
+        <div class="field"><label class="field-label">Type</label>
+          <select class="field-input" onchange="updateType(${idx},this.value)">${typeOptions}</select></div>
+        <div class="field"><label class="field-label">Collection</label>
+          <input class="field-input" readonly value="${prod.collection}" id="col-${idx}"/></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label class="field-label">Colours</label>
+          <input class="field-input" value="${prod.colours}" onchange="products[${idx}].colours=this.value"/></div>
+        <div class="field"><label class="field-label">Sizes</label>
+          <input class="field-input" value="${prod.sizes}" onchange="products[${idx}].sizes=this.value"/></div>
+        <div class="field"><label class="field-label">Price (£)</label>
+          <input class="field-input ${prod.price?'':'missing'}" value="${prod.price}" placeholder="Required"
+            id="price-${idx}" onchange="products[${idx}].price=this.value;this.classList.toggle('missing',!this.value)"/></div>
+      </div>
+      ${prod.notes?`<div class="note-line">📝 ${prod.notes}</div>`:''}`;
+    list.appendChild(card);
+  });
+  updateGoSummary();
+}
+
+function toggleSkip(idx) {
+  products[idx].skip = !products[idx].skip;
+  renderReview();
+}
+function updateType(idx, val) {
+  products[idx].productType = val;
+  products[idx].collection = COLLECTION_MAP[val] || '⚠️ Unknown';
+  document.getElementById(`col-${idx}`).value = products[idx].collection;
+}
+function applyGlobalPrice() {
+  const p = document.getElementById('global-price').value.trim();
+  if (!p) return;
+  products.forEach((prod,i) => {
+    prod.price = p;
+    const el = document.getElementById(`price-${i}`);
+    if (el) { el.value = p; el.classList.remove('missing'); }
+  });
+  updateGoSummary();
+}
+function updateGoSummary() {
+  const active = products.filter(p=>!p.skip);
+  const imgs = active.reduce((a,p)=>a+p.images.length,0);
+  document.getElementById('go-summary').textContent = `${active.length} products · ${imgs} images`;
+}
+
+// ── GO ────────────────────────────────────────────────────────────────────────
+async function handleGo() {
+  const active = products.filter(p=>!p.skip);
+  const missing = active.find(p=>!p.price);
+  if (missing) { alert(`Set a price for: ${missing.title}`); return; }
+
+  showScreen('progress');
+  doneLog = [];
+  const list = document.getElementById('progress-list');
+  list.innerHTML = '';
+
+  const items = active.map(p => {
+    const el = document.createElement('div');
+    el.className = 'progress-item';
+    el.innerHTML = `<span class="progress-icon" style="color:#555">○</span><span class="progress-title">${p.title}</span>`;
+    list.appendChild(el);
+    return el;
+  });
+
+  let created=0, archived=0;
+  for (let i=0; i<active.length; i++) {
+    const prod = active[i];
+    const icon = items[i].querySelector('.progress-icon');
+    icon.textContent='⏳'; icon.style.color='#facc15';
+    try {
+      await createProduct(prod);
+      created++;
+      icon.textContent='✓'; icon.style.color='#4ade80';
+      for (const img of prod.images) {
+        try { await driveMoveToOnboarded(img.id, img.name, selectedVendor.onboardedId); archived++; } catch {}
+      }
+    } catch(e) {
+      icon.textContent='✕'; icon.style.color='#f87171';
+      const errEl = document.createElement('span');
+      errEl.className='progress-error'; errEl.textContent=e.message;
+      items[i].appendChild(errEl);
+    }
+  }
+
+  doneLog.push(`✅ ${created} products created, ${archived} images archived to Onboarded.`);
+  document.getElementById('done-log').innerHTML = doneLog.map(l=>`<div>${l}</div>`).join('');
+  showScreen('done');
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+loadSaved();
+if (cfg.driveToken && cfg.shopifyToken && cfg.claudeKey) {
+  document.getElementById('inp-drive').value = cfg.driveToken;
+  document.getElementById('inp-shopify').value = cfg.shopifyToken;
+  document.getElementById('inp-domain').value = cfg.shopifyDomain;
+  document.getElementById('inp-claude').value = cfg.claudeKey;
+  showScreen('dashboard');
+  checkAllPending();
+} else {
+  showScreen('setup');
+}
+</script>
+</body>
+</html>
